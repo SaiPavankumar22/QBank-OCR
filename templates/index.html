@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MCQ Extractor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+
+/* ── Header ── */
+header{background:#1a1a2e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+header h1{font-size:1.3rem;font-weight:700}
+header span{font-size:.82rem;opacity:.6}
+.header-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+
+/* ── Layout ── */
+main{max-width:1200px;margin:28px auto;padding:0 20px}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:24px;margin-bottom:24px}
+.card-title{font-size:1rem;font-weight:700;color:#333;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* ── Upload zone ── */
+.drop-zone{border:2px dashed #c5c8d0;border-radius:10px;padding:36px;text-align:center;cursor:pointer;transition:.2s}
+.drop-zone:hover,.drop-zone.dragover{background:#f0f4ff;border-color:#4a6cf7}
+.drop-zone input{display:none}
+.drop-zone .icon{font-size:2.2rem;margin-bottom:8px}
+.drop-zone p{color:#888;font-size:.88rem;margin-top:4px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.88rem;font-weight:600;transition:.18s}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:#4a6cf7;color:#fff}
+.btn-success{background:#2e7d32;color:#fff}
+.btn-danger {background:#e53935;color:#fff}
+.btn-ghost  {background:#f0f2f5;color:#444;border:1px solid #ddd}
+.btn-sm     {padding:5px 13px;font-size:.8rem}
+
+.upload-row{display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap}
+#file-label{font-size:.88rem;color:#666}
+
+/* ── Progress ── */
+#progress-wrap{display:none;margin-top:14px}
+.prog-bg{background:#e8eaf0;border-radius:99px;height:8px;overflow:hidden}
+.prog-fill{height:100%;background:#4a6cf7;border-radius:99px;width:0;transition:width .4s}
+#progress-msg{font-size:.82rem;color:#666;margin-top:6px}
+
+/* ── Alerts ── */
+.alert{padding:11px 16px;border-radius:8px;margin-top:14px;font-size:.88rem}
+.alert-success{background:#e8f5e9;color:#2e7d32;border-left:4px solid #43a047}
+.alert-error  {background:#fdecea;color:#c62828;border-left:4px solid #ef5350}
+.alert-warn   {background:#fff8e1;color:#e65100;border-left:4px solid #ffa000}
+
+/* ── Stats ── */
+.stats-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:#fff;border-radius:10px;padding:14px 20px;flex:1;min-width:120px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.stat .num{font-size:1.8rem;font-weight:700;color:#4a6cf7}
+.stat .lbl{font-size:.75rem;color:#888;margin-top:2px}
+.stat.warn .num{color:#e65100}
+.stat.success .num{color:#2e7d32}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.toolbar input,.toolbar select{padding:7px 11px;border:1px solid #ddd;border-radius:7px;font-size:.85rem;outline:none}
+.toolbar input:focus,.toolbar select:focus{border-color:#4a6cf7}
+.toolbar-right{margin-left:auto;display:flex;gap:8px}
+
+/* ── Legend ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.78rem}
+.legend-item{display:flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-warn{background:#ff9800}
+.dot-error{background:#ef5350}
+.dot-ok{background:#4caf50}
+.dot-text{background:#9c27b0}
+
+/* ── Question cards ── */
+#q-list{display:flex;flex-direction:column;gap:14px}
+
+.q-card{border-radius:10px;border:2px solid #e8eaf0;background:#fff;overflow:hidden;transition:.2s}
+.q-card.highlight-missing{border-color:#ef5350;background:#fff8f8}
+.q-card.highlight-warn   {border-color:#ff9800;background:#fffdf0}
+.q-card.highlight-text   {border-color:#9c27b0;background:#fdf4ff}
+.q-card.highlight-ok     {border-color:#4caf50}
+
+.q-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none;border-bottom:1px solid #f0f0f0}
+.q-header:hover{background:#fafbff}
+.q-num{font-weight:700;font-size:.95rem;min-width:36px;color:#1a1a2e}
+.q-type-badge{padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap}
+.badge-mcq      {background:#e3f2fd;color:#1565c0}
+.badge-match    {background:#f3e5f5;color:#6a1b9a}
+.badge-statement{background:#fff8e1;color:#f57f17}
+.badge-text     {background:#ede7f6;color:#4527a0}
+.badge-image    {background:#e8f5e9;color:#2e7d32}
+.badge-fill     {background:#fce4ec;color:#880e4f}
+.q-preview{flex:1;font-size:.85rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-status{font-size:.75rem;font-weight:600;margin-left:auto;white-space:nowrap}
+.status-ok     {color:#2e7d32}
+.status-warn   {color:#e65100}
+.status-error  {color:#c62828}
+.status-text   {color:#6a1b9a}
+.q-toggle{font-size:.8rem;color:#aaa;margin-left:8px}
+
+.q-body{padding:16px;display:none}
+.q-body.open{display:block}
+
+/* ── Edit form ── */
+.field-group{margin-bottom:14px}
+.field-label{font-size:.78rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+.field-label .req{color:#ef5350}
+
+input[type=text].field-input,
+textarea.field-input,
+select.field-input{
+  width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:7px;
+  font-size:.88rem;font-family:inherit;outline:none;resize:vertical
+}
+input[type=text].field-input:focus,
+textarea.field-input:focus,
+select.field-input:focus{border-color:#4a6cf7}
+.field-input.missing{border-color:#ef5350;background:#fff8f8}
+
+/* Options grid */
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.option-row{display:flex;align-items:center;gap:8px}
+.option-key{font-weight:700;font-size:.88rem;min-width:20px;color:#1565c0}
+
+/* List edit */
+.list-edit{display:flex;flex-direction:column;gap:6px}
+.list-item-row{display:flex;gap:6px;align-items:center}
+.list-item-row input{flex:1}
+.btn-remove{background:none;border:none;color:#ef5350;cursor:pointer;font-size:1rem;padding:2px 6px}
+.btn-add-item{margin-top:6px}
+
+/* Answer field */
+.answer-row{display:flex;gap:10px;align-items:center}
+.answer-badge{padding:4px 14px;border-radius:6px;font-weight:700;font-size:.9rem}
+.answer-badge.answered{background:#e8f5e9;color:#2e7d32}
+.answer-badge.missing {background:#fdecea;color:#c62828}
+
+/* Card actions */
+.card-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f0f0f0;flex-wrap:wrap}
+
+/* ── Empty / no results ── */
+#no-questions{display:none;text-align:center;padding:40px;color:#aaa;font-size:.95rem}
+
+/* ── Spinner ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid #ccc;border-top-color:#4a6cf7;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+
+/* ── Save banner ── */
+#save-banner{display:none;position:sticky;bottom:0;background:#1a1a2e;color:#fff;padding:14px 32px;display:none;align-items:center;gap:14px;z-index:99;box-shadow:0 -2px 12px rgba(0,0,0,.2)}
+#save-banner.show{display:flex}
+#save-banner span{flex:1;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:1.4rem">📄</div>
+  <div>
+    <h1>MCQ Extractor</h1>
+    <span>Extract, Review & Edit before saving</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="loadFromDB()">📂 View DB</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-title">📤 Upload Exam PDF</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+      <div class="icon">📂</div>
+      <p><strong>Click or drag &amp; drop</strong> a PDF file here</p>
+      <p>Coaching PDFs • UPSC/SSC/PSC papers • Scanned books • Mixed formats</p>
+      <input type="file" id="pdf-input" accept=".pdf"/>
+    </div>
+    <div class="upload-row">
+      <button class="btn btn-primary" onclick="uploadPDF()" id="upload-btn">⚡ Extract Questions</button>
+      <span id="file-label">No file selected</span>
+    </div>
+    <div id="progress-wrap">
+      <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
+      <div id="progress-msg">Processing…</div>
+    </div>
+    <div id="alert-area"></div>
+  </div>
+
+  <!-- Stats -->
+  <div id="stats-area" style="display:none">
+    <div class="stats-row">
+      <div class="stat"><div class="num" id="s-total">0</div><div class="lbl">Total</div></div>
+      <div class="stat success"><div class="num" id="s-ans">0</div><div class="lbl">With Answers</div></div>
+      <div class="stat warn"><div class="num" id="s-miss">0</div><div class="lbl">Missing Data</div></div>
+      <div class="stat"><div class="num" id="s-text">0</div><div class="lbl">Text Type</div></div>
+      <div class="stat"><div class="num" id="s-diag">0</div><div class="lbl">With Diagrams</div></div>
+    </div>
+  </div>
+
+  <!-- Review Panel -->
+  <div class="card" id="review-card" style="display:none">
+    <div class="card-title">
+      ✏️ Review &amp; Edit Extracted Questions
+      <span style="font-size:.78rem;font-weight:400;color:#888;margin-left:6px">
+        Click any question to expand and edit
+      </span>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="dot dot-error"></div> Missing required data (needs fix)</div>
+      <div class="legend-item"><div class="dot dot-warn"></div> Missing answer only</div>
+      <div class="legend-item"><div class="dot dot-text"></div> Text-type (no options — normal)</div>
+      <div class="legend-item"><div class="dot dot-ok"></div> Complete</div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input type="text" id="f-search" placeholder="🔍 Search…" oninput="applyFilters()" style="min-width:180px"/>
+      <select id="f-type" onchange="applyFilters()">
+        <option value="">All types</option>
+        <option value="mcq">MCQ</option>
+        <option value="match">Match</option>
+        <option value="statement">Statement</option>
+        <option value="text">Text</option>
+        <option value="fill">Fill</option>
+      </select>
+      <select id="f-status" onchange="applyFilters()">
+        <option value="">All status</option>
+        <option value="missing">Missing data</option>
+        <option value="warn">Missing answer</option>
+        <option value="ok">Complete</option>
+      </select>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="expandAll()">Expand All</button>
+        <button class="btn btn-ghost btn-sm" onclick="collapseAll()">Collapse All</button>
+      </div>
+    </div>
+
+    <div id="q-list"></div>
+    <div id="no-questions">No questions match the filter.</div>
+  </div>
+
+</main>
+
+<!-- Save banner (sticky bottom) -->
+<div id="save-banner">
+  <span>🎉 <strong id="banner-count">0</strong> questions extracted — review above then save to database.</span>
+  <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Discard</button>
+  <button class="btn btn-success" onclick="saveToDb()" id="save-btn">💾 Save to Database</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let allQuestions = [];   // working copy (editable)
+let currentFilename = "";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+const dz    = document.getElementById('drop-zone');
+const input = document.getElementById('pdf-input');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('dragover');
+  if(e.dataTransfer.files[0]){input.files=e.dataTransfer.files;updateLabel()}
+});
+input.addEventListener('change',updateLabel);
+
+function updateLabel(){
+  const f=input.files[0];
+  document.getElementById('file-label').textContent=f?f.name:'No file selected';
+}
+
+async function uploadPDF(){
+  const f=input.files[0];
+  if(!f){showAlert('Please select a PDF file first.','error');return}
+  document.getElementById('upload-btn').disabled=true;
+  clearAlert();
+  setProgress(true,10,'Uploading PDF…');
+
+  const fd=new FormData();
+  fd.append('file',f);
+  currentFilename=f.name;
+
+  try{
+    setProgress(true,30,'Extracting with AI vision…');
+    const res=await fetch('/upload',{method:'POST',body:fd});
+    setProgress(true,80,'Parsing complete…');
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.detail||'Server error');
+    setProgress(true,100,'Done!');
+    setTimeout(()=>setProgress(false),500);
+
+    allQuestions=data.questions||[];
+    renderStats();
+    renderAll();
+    showAlert(`✓ Extracted ${allQuestions.length} questions. Review below, then click Save.`,'success');
+  }catch(e){
+    setProgress(false);
+    showAlert('Error: '+e.message,'error');
+  }finally{
+    document.getElementById('upload-btn').disabled=false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS LOGIC
+// ─────────────────────────────────────────────────────────────────────────────
+function getStatus(q){
+  const type=q.type||'mcq';
+
+  if(type==='text'||type==='fill'){
+    // Text questions: no options expected, highlight differently
+    if(!q.answer)return 'warn';   // missing answer
+    return 'text';                 // has answer, special green-purple
+  }
+
+  if(type==='match'){
+    const missing=(!q.question)||(!q.options||Object.keys(q.options).length===0)||
+                  (!q.list1||q.list1.length===0)||(!q.list2||q.list2.length===0);
+    if(missing)return 'missing';
+    if(!q.answer)return 'warn';
+    return 'ok';
+  }
+
+  // mcq / statement / image
+  const hasQ=q.question&&q.question.trim().length>0;
+  const hasOpts=q.options&&Object.keys(q.options).length>=2;
+  if(!hasQ||!hasOpts)return 'missing';
+  if(!q.answer)return 'warn';
+  return 'ok';
+}
+
+function statusLabel(s){
+  return {
+    missing:'⚠ Missing data',
+    warn:'! Missing answer',
+    text:'◈ Text type',
+    ok:'✓ Complete'
+  }[s]||'';
+}
+function statusClass(s){
+  return {missing:'status-error',warn:'status-warn',text:'status-text',ok:'status-ok'}[s]||'';
+}
+function cardClass(s){
+  return {missing:'highlight-missing',warn:'highlight-warn',text:'highlight-text',ok:'highlight-ok'}[s]||'';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────────────────────────────────────
+function renderStats(){
+  const qs=allQuestions;
+  document.getElementById('stats-area').style.display='block';
+  document.getElementById('s-total').textContent=qs.length;
+  document.getElementById('s-ans').textContent=qs.filter(q=>q.answer).length;
+  document.getElementById('s-miss').textContent=qs.filter(q=>getStatus(q)==='missing'||getStatus(q)==='warn').length;
+  document.getElementById('s-text').textContent=qs.filter(q=>q.type==='text').length;
+  document.getElementById('s-diag').textContent=qs.filter(q=>q.diagram).length;
+  document.getElementById('banner-count').textContent=qs.length;
+  document.getElementById('save-banner').classList.add('show');
+  document.getElementById('review-card').style.display='block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER ALL CARDS
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll(){
+  const container=document.getElementById('q-list');
+  container.innerHTML='';
+  const visible=filteredQuestions();
+
+  document.getElementById('no-questions').style.display=visible.length?'none':'block';
+
+  visible.forEach(q=>{
+    const idx=allQuestions.indexOf(q);
+    container.insertAdjacentHTML('beforeend',buildCard(q,idx));
+  });
+}
+
+function filteredQuestions(){
+  const txt=(document.getElementById('f-search').value||'').toLowerCase();
+  const typ=document.getElementById('f-type').value;
+  const sta=document.getElementById('f-status').value;
+
+  return allQuestions.filter(q=>{
+    if(txt&&!(q.question||'').toLowerCase().includes(txt))return false;
+    if(typ&&q.type!==typ)return false;
+    const s=getStatus(q);
+    if(sta==='missing'&&s!=='missing')return false;
+    if(sta==='warn'&&s!=='warn')return false;
+    if(sta==='ok'&&(s!=='ok'&&s!=='text'))return false;
+    return true;
+  });
+}
+
+function applyFilters(){renderAll()}
+
+function buildCard(q,idx){
+  const st=getStatus(q);
+  const type=q.type||'mcq';
+  const opts=q.options||{};
+  const preview=esc(q.question||'(no question text)').substring(0,90)+(q.question&&q.question.length>90?'…':'');
+
+  // Options section
+  let optsHtml='';
+  if(type!=='text'&&type!=='fill'){
+    const letters=['A','B','C','D'];
+    optsHtml=`
+      <div class="field-group">
+        <div class="field-label">Options <span class="req">${(type==='mcq'||type==='statement'||type==='image')?'*':''}</span></div>
+        <div class="options-grid">
+          ${letters.map(l=>`
+            <div class="option-row">
+              <span class="option-key">${l}.</span>
+              <input type="text" class="field-input ${(!opts[l]&&(type==='mcq'||type==='statement'))?' missing':''}"
+                value="${esc(opts[l]||'')}"
+                placeholder="Option ${l}"
+                onchange="updateOption(${idx},'${l}',this.value)"
+              />
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // List-I / List-II for match
+  let listHtml='';
+  if(type==='match'){
+    listHtml=`
+      <div class="field-group">
+        <div class="field-label">List-I <span class="req">*</span></div>
+        <div class="list-edit" id="list1-${idx}">
+          ${(q.list1||[]).map((v,i)=>`
+            <div class="list-item-row">
+              <input type="text" class="field-input" value="${esc(v)}"
+                onchange="updateListItem(${idx},'list1',${i},this.value)"/>
+              <button class="btn-remove" onclick="removeListItem(${idx},'list1',${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-ghost btn-sm btn-add-item" onclick="addListItem(${idx},'list1')">+ Add item</button>
+      </div>
+      <div class="field-group">
+        <div class="field-label">List-II <span class="req">*</span></div>
+        <div class="list-edit" id="list2-${idx}">
+          ${(q.list2||[]).map((v,i)=>`
+            <div class="list-item-row">
+              <input type="text" class="field-input" value="${esc(v)}"
+                onchange="updateListItem(${idx},'list2',${i},this.value)"/>
+              <button class="btn-remove" onclick="removeListItem(${idx},'list2',${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-ghost btn-sm btn-add-item" onclick="addListItem(${idx},'list2')">+ Add item</button>
+      </div>`;
+  }
+
+  // Answer field
+  const ansVal=q.answer||'';
+  let ansHtml='';
+  if(type==='text'||type==='fill'){
+    ansHtml=`
+      <div class="field-group">
+        <div class="field-label">Answer (text value)</div>
+        <input type="text" class="field-input ${!ansVal?'missing':''}"
+          value="${esc(ansVal)}"
+          placeholder="e.g. 60%  or  35:45:21"
+          onchange="updateField(${idx},'answer',this.value)"
+        />
+      </div>`;
+  } else {
+    ansHtml=`
+      <div class="field-group">
+        <div class="field-label">Answer</div>
+        <div class="answer-row">
+          <select class="field-input" style="max-width:100px"
+            onchange="updateField(${idx},'answer',this.value)">
+            <option value="">— none —</option>
+            ${['A','B','C','D'].map(l=>`<option value="${l}" ${ansVal===l?'selected':''}>${l}</option>`).join('')}
+          </select>
+          <span class="answer-badge ${ansVal?'answered':'missing'}">${ansVal||'Not set'}</span>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="q-card ${cardClass(st)}" id="qcard-${idx}">
+      <div class="q-header" onclick="toggleCard(${idx})">
+        <span class="q-num">Q${q.qno}</span>
+        <span class="q-type-badge badge-${type}">${type}</span>
+        <span class="q-preview">${preview}</span>
+        <span class="q-status ${statusClass(st)}">${statusLabel(st)}</span>
+        <span class="q-toggle" id="toggle-${idx}">▼</span>
+      </div>
+      <div class="q-body" id="body-${idx}">
+        <div class="field-group">
+          <div class="field-label">Q.No</div>
+          <input type="text" class="field-input" style="max-width:80px"
+            value="${q.qno}"
+            onchange="updateField(${idx},'qno',parseInt(this.value)||this.value)"/>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Type</div>
+          <select class="field-input" style="max-width:160px"
+            onchange="changeType(${idx},this.value)">
+            ${['mcq','match','statement','text','image','fill'].map(t=>
+              `<option value="${t}" ${type===t?'selected':''}>${t}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Question text <span class="req">*</span></div>
+          <textarea class="field-input ${!q.question?'missing':''}"
+            rows="3"
+            onchange="updateField(${idx},'question',this.value)"
+          >${esc(q.question||'')}</textarea>
+        </div>
+        ${optsHtml}
+        ${listHtml}
+        ${ansHtml}
+        <div class="card-actions">
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${idx})">🗑 Remove</button>
+          <span style="flex:1"></span>
+          <span style="font-size:.78rem;color:#aaa">Index ${idx}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CARD INTERACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleCard(idx){
+  const body=document.getElementById(`body-${idx}`);
+  const tog=document.getElementById(`toggle-${idx}`);
+  const open=body.classList.toggle('open');
+  tog.textContent=open?'▲':'▼';
+}
+function expandAll(){
+  document.querySelectorAll('.q-body').forEach(b=>{b.classList.add('open')});
+  document.querySelectorAll('.q-toggle').forEach(t=>{t.textContent='▲'});
+}
+function collapseAll(){
+  document.querySelectorAll('.q-body').forEach(b=>{b.classList.remove('open')});
+  document.querySelectorAll('.q-toggle').forEach(t=>{t.textContent='▼'});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA MUTATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function updateField(idx,field,value){
+  allQuestions[idx][field]=value;
+  refreshCard(idx);
+}
+
+function updateOption(idx,letter,value){
+  if(!allQuestions[idx].options)allQuestions[idx].options={};
+  allQuestions[idx].options[letter]=value;
+  refreshCard(idx);
+}
+
+function updateListItem(idx,listKey,i,value){
+  allQuestions[idx][listKey][i]=value;
+}
+
+function addListItem(idx,listKey){
+  if(!allQuestions[idx][listKey])allQuestions[idx][listKey]=[];
+  allQuestions[idx][listKey].push('');
+  refreshCard(idx);
+}
+
+function removeListItem(idx,listKey,i){
+  allQuestions[idx][listKey].splice(i,1);
+  refreshCard(idx);
+}
+
+function changeType(idx,newType){
+  allQuestions[idx].type=newType;
+  if(newType==='text'||newType==='fill'){
+    allQuestions[idx].options={};
+    // Convert letter answer to null for text type
+    const ans=allQuestions[idx].answer;
+    if(ans&&ans.length===1&&'ABCD'.includes(ans)){
+      allQuestions[idx].answer=null;
+    }
+  }
+  refreshCard(idx);
+}
+
+function deleteQuestion(idx){
+  if(!confirm(`Remove Q${allQuestions[idx].qno} from the list?`))return;
+  allQuestions.splice(idx,1);
+  renderAll();
+  renderStats();
+}
+
+function refreshCard(idx){
+  const card=document.getElementById(`qcard-${idx}`);
+  if(!card)return;
+  const wasOpen=document.getElementById(`body-${idx}`)?.classList.contains('open');
+  const q=allQuestions[idx];
+  card.outerHTML=buildCard(q,idx);
+  if(wasOpen){
+    document.getElementById(`body-${idx}`)?.classList.add('open');
+    if(document.getElementById(`toggle-${idx}`))
+      document.getElementById(`toggle-${idx}`).textContent='▲';
+  }
+  // Update stats
+  renderStats();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAVE TO DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function saveToDb(){
+  if(!allQuestions.length){showAlert('No questions to save.','warn');return}
+  document.getElementById('save-btn').disabled=true;
+  showAlert('<span class="spinner"></span> Saving to database…','warn');
+
+  try{
+    const res=await fetch('/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({filename:currentFilename,questions:allQuestions})
+    });
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.detail||'Save failed');
+    showAlert(`✓ Saved ${d.saved} questions to database. Upload ID: ${d.upload_id}`,'success');
+    document.getElementById('save-banner').classList.remove('show');
+  }catch(e){
+    showAlert('Save error: '+e.message,'error');
+  }finally{
+    document.getElementById('save-btn').disabled=false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOAD FROM DB
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadFromDB(){
+  try{
+    const res=await fetch('/questions');
+    const d=await res.json();
+    if(!d.questions.length){showAlert('No questions in database yet.','warn');return}
+    allQuestions=d.questions;
+    currentFilename='(from database)';
+    renderStats();
+    renderAll();
+    showAlert(`Loaded ${allQuestions.length} questions from database.`,'success');
+  }catch(e){
+    showAlert('Load error: '+e.message,'error');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLEAR
+// ─────────────────────────────────────────────────────────────────────────────
+function clearAll(){
+  if(!confirm('Discard all extracted questions (not yet saved to DB)?'))return;
+  allQuestions=[];
+  document.getElementById('q-list').innerHTML='';
+  document.getElementById('stats-area').style.display='none';
+  document.getElementById('review-card').style.display='none';
+  document.getElementById('save-banner').classList.remove('show');
+  clearAlert();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function esc(s){
+  return String(s??'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function setProgress(show,pct,msg){
+  const w=document.getElementById('progress-wrap');
+  w.style.display=show?'block':'none';
+  if(show){
+    document.getElementById('prog-fill').style.width=pct+'%';
+    document.getElementById('progress-msg').textContent=msg;
+  }
+}
+function showAlert(msg,type){
+  document.getElementById('alert-area').innerHTML=
+    `<div class="alert alert-${type}" style="margin-top:12px">${msg}</div>`;
+}
+function clearAlert(){document.getElementById('alert-area').innerHTML=''}
+</script>
+</body>
+</html>
